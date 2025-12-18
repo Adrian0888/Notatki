@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometria Hub: Wektory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Slate-50 */
+            color: #0f172a; /* Slate-900 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: auto;
+            height: 300px;
+        }
+        .tab-active {
+            border-bottom: 3px solid #6366f1; /* Indigo-500 */
+            color: #312e81; /* Indigo-900 */
+            background-color: #eef2ff;
+        }
+        .tab-inactive {
+            border-bottom: 3px solid transparent;
+            color: #64748b; /* Slate-500 */
+        }
+        .tab-inactive:hover {
+            color: #1e293b;
+            background-color: #f1f5f9;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <!-- Chosen Palette: Indigo & Slate. Professional design optimized for geometric visualization. -->
+    
+    <!-- Application Structure Plan: 
+         Corrected the LaTeX rendering issue by escaping backslashes in JS strings (e.g., \\vec instead of \vec).
+         The SPA remains tab-based for structured learning of vector concepts:
+         1. Przestrzeń: Interactive coordinate calculator and plot.
+         2. Operacje: Algebraic challenge with validation.
+         3. Długość & Wersor: Automated normalization tool.
+         4. Finał: Summary and quick knowledge test.
+    -->
+
+    <!-- Visualization & Content Choices:
+         - Vector Plot: Real-time update via Chart.js scatter plot.
+         - MathJax: Used double backslashes in all dynamic template literals to prevent JS escape character conflicts.
+         - Contextual intros for each section to guide the student.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-indigo-600">Geometria<span class="text-slate-800">Hub</span></span>
+                </div>
+                <div class="hidden md:flex space-x-2 h-full items-end" id="main-nav">
+                    <!-- Nav items injected by JS -->
+                </div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-toggle" class="text-slate-600 text-2xl">&#9776;</button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-50 border-t border-slate-200"></div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="app-content" class="fade-in"></div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>&copy; 2025 Interaktywny Kurs Geometrii Analitycznej. Wszystkie wzory renderowane poprawnie przez MathJax.</p>
+    </footer>
+
+    <script>
+        const state = {
+            activeTab: 'intro',
+            points: { ax: 1, ay: 2, bx: 5, by: 5 }
+        };
+
+        const tabs = [
+            { id: 'intro', label: '1. Przestrzeń' },
+            { id: 'ops', label: '2. Operacje' },
+            { id: 'norm', label: '3. Długość & Wersor' },
+            { id: 'final', label: 'Finał' }
+        ];
+
+        function renderNav() {
+            const nav = document.getElementById('main-nav');
+            const mobile = document.getElementById('mobile-menu');
+            let nHtml = '', mHtml = '';
+
+            tabs.forEach(t => {
+                const active = state.activeTab === t.id;
+                nHtml += `<button onclick="setTab('${t.id}')" class="${active ? 'tab-active' : 'tab-inactive'} px-6 py-4 text-sm font-semibold transition-all focus:outline-none">${t.label}</button>`;
+                mHtml += `<button onclick="setTab('${t.id}')" class="${active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'} block w-full text-left px-4 py-3 border-l-4 ${active ? 'border-indigo-500' : 'border-transparent'}">${t.label}</button>`;
+            });
+            nav.innerHTML = nHtml;
+            mobile.innerHTML = mHtml;
+        }
+
+        function setTab(id) {
+            state.activeTab = id;
+            renderNav();
+            renderView();
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function renderView() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = '';
+
+            switch (state.activeTab) {
+                case 'intro': renderIntro(container); break;
+                case 'ops': renderOps(container); break;
+                case 'norm': renderNorm(container); break;
+                case 'final': renderFinal(container); break;
+            }
+
+            // Trigger MathJax re-render
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        // --- VIEW: INTRO ---
+        function renderIntro(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div class="space-y-8">
+                        <div>
+                            <h1 class="text-4xl font-extrabold text-slate-900 mb-4">Witaj w Świecie Wektorów</h1>
+                            <p class="text-lg text-slate-600 italic mb-2">Pierwszy krok: Budowanie intuicji</p>
+                            <p class="text-slate-600 text-sm">W tej sekcji poznasz kartezjański układ współrzędnych oraz kluczową różnicę między punktem a wektorem.</p>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-3 flex items-center">
+                                <span class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-3">?</span>
+                                Punkt czy Wektor?
+                            </h3>
+                            <p class="text-slate-600 mb-4 italic">Analogia: Mapa Skarbów</p>
+                            <p class="text-slate-600 text-sm">
+                                <b>Punkt</b> to lokalizacja, np. "Miejsce, gdzie zakopano skarb" ($x, y$). <br>
+                                <b>Wektor</b> to instrukcja podróży: "idź 4 jednostki w prawo i 3 jednostki w górę".
+                            </p>
+                        </div>
+
+                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                            <h3 class="font-bold text-indigo-900 mb-2">Obliczanie Wektora $\\vec{AB}$</h3>
+                            <p class="text-indigo-800 text-sm">Mając punkty $A(x_1, y_1)$ oraz $B(x_2, y_2)$, współrzędne wektora $\\vec{AB}$ otrzymujemy odejmując początek od końca:</p>
+                            <div class="mt-4 font-mono text-center text-xl text-indigo-600">
+                                $\\vec{AB} = [x_2 - x_1, y_2 - y_1]$
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl">
+                        <h3 class="text-xl font-bold mb-6 text-indigo-400">Laboratorium Współrzędnych</h3>
+                        <div class="grid grid-cols-2 gap-6 mb-8">
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-400 uppercase">Punkt A (start)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="pax" value="${state.points.ax}" class="w-full bg-slate-800 border border-slate-700 p-2 rounded text-center">
+                                    <input type="number" id="pay" value="${state.points.ay}" class="w-full bg-slate-800 border border-slate-700 p-2 rounded text-center">
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold text-slate-400 uppercase">Punkt B (koniec)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="pbx" value="${state.points.bx}" class="w-full bg-slate-800 border border-slate-700 p-2 rounded text-center">
+                                    <input type="number" id="pby" value="${state.points.by}" class="w-full bg-slate-800 border border-slate-700 p-2 rounded text-center">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center mb-8">
+                            <p class="text-slate-400 text-xs mb-1 uppercase tracking-wider">Wynikowy Wektor $\\vec{AB}$</p>
+                            <div id="calc-res" class="text-4xl font-black text-indigo-400">
+                                [${state.points.bx - state.points.ax}, ${state.points.by - state.points.ay}]
+                            </div>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="introChart"></canvas>
+                        </div>
+                        <button onclick="updateIntroPlot()" class="w-full mt-6 bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition-colors">Oblicz i Rysuj</button>
+                    </div>
+                </div>
+            `;
+            setTimeout(initIntroPlot, 100);
+        }
+
+        function updateIntroPlot() {
+            state.points.ax = parseFloat(document.getElementById('pax').value) || 0;
+            state.points.ay = parseFloat(document.getElementById('pay').value) || 0;
+            state.points.bx = parseFloat(document.getElementById('pbx').value) || 0;
+            state.points.by = parseFloat(document.getElementById('pby').value) || 0;
+            document.getElementById('calc-res').innerText = `[${state.points.bx - state.points.ax}, ${state.points.by - state.points.ay}]`;
+            initIntroPlot();
+        }
+
+        // --- VIEW: OPERATIONS ---
+        function renderOps(container) {
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto space-y-12">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 2: Dodawanie, Odejmowanie i Skalowanie</h2>
+                        <p class="text-slate-600">Nauczysz się algebraicznego i geometrycznego operowania na wektorach.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-4 underline decoration-indigo-300 underline-offset-4">Algebraicznie</h3>
+                            <p class="text-sm text-slate-600 mb-6">Sumujemy lub odejmujemy odpowiadające sobie współrzędne:</p>
+                            <div class="bg-slate-50 p-4 rounded-xl font-mono text-center mb-6">
+                                $[u_1, u_2] \\pm [v_1, v_2] = [u_1 \\pm v_1, u_2 \\pm v_2]$
+                            </div>
+                            <h3 class="font-bold text-slate-800 mb-4 underline decoration-indigo-300 underline-offset-4">Mnożenie przez skalar $k$</h3>
+                            <p class="text-sm text-slate-600 mb-4">Liczba mnoży każdą współrzędną z osobna:</p>
+                            <div class="bg-slate-50 p-4 rounded-xl font-mono text-center">
+                                $k \\cdot [u_1, u_2, u_3] = [k u_1, k u_2, k u_3]$
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-900 text-white p-8 rounded-2xl shadow-xl">
+                            <h3 class="text-xl font-bold mb-4 text-indigo-300 text-center">Interaktywna Praktyka</h3>
+                            <p class="text-sm mb-6 opacity-80 text-center">Dany wektor $\\vec{u} = [1, 2, 3]$ oraz $\\vec{v} = [4, 5, 6]$. <br> Oblicz działanie: $2\\vec{u} - \\vec{v}$</p>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-indigo-400 mb-2 uppercase tracking-wide">KROK 1: Ile to $2\\vec{u}$?</label>
+                                    <input type="text" id="op-s1" class="w-full bg-indigo-800 border-none p-3 rounded-lg text-center font-mono focus:ring-2 ring-indigo-400" placeholder="np. [2, 4, 6]">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-indigo-400 mb-2 uppercase tracking-wide">KROK 2: Wynik końcowy $(2\\vec{u} - \\vec{v})$?</label>
+                                    <input type="text" id="op-s2" class="w-full bg-indigo-800 border-none p-3 rounded-lg text-center font-mono focus:ring-2 ring-indigo-400" placeholder="np. [-2, -1, 0]">
+                                </div>
+                                <button onclick="checkOpsChallenge()" class="w-full bg-indigo-500 hover:bg-indigo-400 py-3 rounded-xl font-bold transition-all transform active:scale-95 shadow-lg">Sprawdź wynik</button>
+                                <div id="op-feedback" class="text-center font-bold text-sm h-4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkOpsChallenge() {
+            const s1 = document.getElementById('op-s1').value.replace(/\s/g, '');
+            const s2 = document.getElementById('op-s2').value.replace(/\s/g, '');
+            const fb = document.getElementById('op-feedback');
+
+            const is1Correct = s1 === '[2,4,6]';
+            const is2Correct = s2 === '[-2,-1,0]';
+
+            if (is1Correct && is2Correct) {
+                fb.innerText = "Brawo! Matematyczna precyzja.";
+                fb.className = "text-center font-bold text-emerald-400 h-4";
+            } else if (is1Correct && !is2Correct) {
+                fb.innerText = "Krok 1 OK, ale w Kroku 2 błąd odejmowania!";
+                fb.className = "text-center font-bold text-amber-400 h-4";
+            } else {
+                fb.innerText = "Coś się nie zgadza w pierwszym kroku. Pomnóż u przez 2.";
+                fb.className = "text-center font-bold text-rose-400 h-4";
+            }
+        }
+
+        // --- VIEW: NORM ---
+        function renderNorm(container) {
+            container.innerHTML = `
+                <div class="max-w-4xl mx-auto">
+                    <div class="text-center mb-12">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 3: Długość wektora i Wersor</h2>
+                        <p class="text-slate-600 italic">Jak obliczyć długość "strzałki" i jak ją znormalizować?</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                            <h4 class="font-bold mb-4 text-indigo-600 uppercase tracking-widest text-xs">Długość (Moduł) $|\\vec{v}|$</h4>
+                            <p class="text-sm text-slate-600 mb-4">To rozszerzone Twierdzenie Pitagorasa. Długość wektora to pierwiastek z sumy kwadratów jego współrzędnych:</p>
+                            <div class="p-4 bg-slate-50 rounded-xl text-center text-xl font-mono border border-slate-100">
+                                $|\\vec{v}| = \\sqrt{x^2 + y^2 + z^2}$
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                            <h4 class="font-bold mb-4 text-indigo-600 uppercase tracking-widest text-xs">Wersor $\\hat{v}$</h4>
+                            <p class="text-sm text-slate-600 mb-4">Normalizacja wektora polega na znalezieniu wersora (wektora o długości 1), który zachowuje ten sam kierunek:</p>
+                            <div class="p-4 bg-slate-50 rounded-xl text-center text-xl font-mono border border-slate-100">
+                                $\\hat{v} = \\frac{\\vec{v}}{|\\vec{v}|}$
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-600 text-white p-10 rounded-3xl shadow-xl">
+                        <h3 class="text-2xl font-bold mb-8 text-center text-indigo-100">Laboratorium Normalizacji</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                            <div class="space-y-6">
+                                <p class="text-indigo-100 text-sm">Podaj wektor $\\vec{v} = [x, y, z]$ do analizy:</p>
+                                <div class="flex gap-4">
+                                    <input type="number" id="nx" value="3" class="w-full bg-indigo-700 p-3 rounded-xl text-center focus:ring-2 ring-indigo-300 border-none">
+                                    <input type="number" id="ny" value="4" class="w-full bg-indigo-700 p-3 rounded-xl text-center focus:ring-2 ring-indigo-300 border-none">
+                                    <input type="number" id="nz" value="0" class="w-full bg-indigo-700 p-3 rounded-xl text-center focus:ring-2 ring-indigo-300 border-none">
+                                </div>
+                                <button onclick="calculateNorm()" class="w-full bg-white text-indigo-600 font-bold py-3 rounded-xl hover:bg-indigo-50 transition-all shadow-lg active:scale-95">Normalizuj Wektor</button>
+                            </div>
+                            <div id="norm-result-box" class="p-6 bg-indigo-700 rounded-2xl border border-indigo-500 hidden text-center space-y-4">
+                                <div>
+                                    <p class="text-xs text-indigo-300 uppercase font-bold tracking-tighter">Długość $|\\vec{v}|$</p>
+                                    <p id="res-len" class="text-3xl font-black">5</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-indigo-300 uppercase font-bold tracking-tighter">Wersor $\\hat{v}$ (Wektor jednostkowy)</p>
+                                    <p id="res-versor" class="text-xl font-mono text-indigo-200">[0.60, 0.80, 0.00]</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateNorm() {
+            const x = parseFloat(document.getElementById('nx').value) || 0;
+            const y = parseFloat(document.getElementById('ny').value) || 0;
+            const z = parseFloat(document.getElementById('nz').value) || 0;
+            const len = Math.sqrt(x*x + y*y + z*z);
+            
+            const box = document.getElementById('norm-result-box');
+            box.classList.remove('hidden');
+
+            if (len === 0) {
+                document.getElementById('res-len').innerText = '0';
+                document.getElementById('res-versor').innerText = 'Błąd: Wektor zerowy';
+                return;
+            }
+
+            document.getElementById('res-len').innerText = len.toFixed(3);
+            document.getElementById('res-versor').innerText = `[${(x/len).toFixed(2)}, ${(y/len).toFixed(2)}, ${(z/len).toFixed(2)}]`;
+        }
+
+        // --- VIEW: FINAL ---
+        function renderFinal(container) {
+            container.innerHTML = `
+                <div class="space-y-12">
+                    <div class="text-center">
+                        <h2 class="text-4xl font-bold text-slate-900 mb-4">Podsumowanie i Zastosowania</h2>
+                        <p class="text-slate-600">Opanowałeś podstawowe operacje. Zobacz, gdzie są one niezbędne.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
+                            <h3 class="text-xl font-bold mb-4 flex items-center text-indigo-600">
+                                <span class="mr-3 text-2xl">🔭</span> Fizyka
+                            </h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Wektory opisują <b>siłę</b>, <b>prędkość</b> i <b>przyspieszenie</b>. 
+                                Przykładowo, siła wypadkowa działająca na obiekt to suma wektorowa wszystkich sił składowych.
+                            </p>
+                        </div>
+                        <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 hover:border-indigo-200 transition-colors">
+                            <h3 class="text-xl font-bold mb-4 flex items-center text-indigo-600">
+                                <span class="mr-3 text-2xl">🎮</span> Grafika Komputerowa
+                            </h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Każdy ruch postaci, kierunek kamery czy padanie światła na model 3D opiera się na wektorach. Obliczanie oświetlenia wymaga ciągłej normalizacji wektorów (znajdowania wersorów).
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-10 rounded-3xl shadow-2xl relative overflow-hidden">
+                        <div class="relative z-10 text-center">
+                            <h3 class="text-2xl font-bold mb-6 text-indigo-400">Zbiorczy Test Wiedzy</h3>
+                            <div id="final-test" class="space-y-8 max-w-lg mx-auto">
+                                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                                    <p class="mb-4 font-semibold text-sm">1. Ile wynosi współrzędna $x$ wektora $\\vec{AB}$, jeśli punkt $A(10, 5)$ a punkt $B(15, 8)$?</p>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button onclick="checkTest(1, 5)" class="bg-slate-700 p-2 rounded hover:bg-indigo-600 transition-colors focus:ring-2 ring-indigo-400">5</button>
+                                        <button onclick="checkTest(1, -5)" class="bg-slate-700 p-2 rounded hover:bg-indigo-600 transition-colors focus:ring-2 ring-indigo-400">-5</button>
+                                        <button onclick="checkTest(1, 25)" class="bg-slate-700 p-2 rounded hover:bg-indigo-600 transition-colors focus:ring-2 ring-indigo-400">25</button>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                                    <p class="mb-4 font-semibold text-sm">2. Jaka jest długość wektora $[0, 0, 7]$?</p>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <button onclick="checkTest(2, 0)" class="bg-slate-700 p-2 rounded hover:bg-indigo-600 transition-colors focus:ring-2 ring-indigo-400">0</button>
+                                        <button onclick="checkTest(2, 7)" class="bg-slate-700 p-2 rounded hover:bg-indigo-600 transition-colors focus:ring-2 ring-indigo-400">7</button>
+                                        <button onclick="checkTest(2, 49)" class="bg-slate-700 p-2 rounded hover:bg-indigo-600 transition-colors focus:ring-2 ring-indigo-400">49</button>
+                                    </div>
+                                </div>
+                                <div id="test-feedback" class="h-8 font-bold text-indigo-400 text-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-50 p-8 rounded-3xl border border-indigo-100 text-center">
+                        <h3 class="text-xl font-bold text-indigo-900 mb-2">Świetna robota!</h3>
+                        <p class="text-indigo-700 text-sm italic">"Opanowałeś podstawowe operacje. Co dalej?"</p>
+                        <div class="mt-6 p-6 bg-white rounded-2xl shadow-sm inline-block border border-indigo-100">
+                            <p class="text-xs font-bold text-indigo-500 uppercase mb-2 tracking-widest">Zapowiedź kolejnego modułu</p>
+                            <p class="text-slate-700 font-semibold mb-2 text-lg">Iloczyn Skalarny</p>
+                            <p class="text-slate-500 text-xs">Pozwala na błyskawiczne obliczanie kątów między wektorami oraz sprawdzanie prostopadłości.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkTest(q, val) {
+            const fb = document.getElementById('test-feedback');
+            if ((q === 1 && val === 5) || (q === 2 && val === 7)) {
+                fb.innerText = "Poprawnie! Doskonała odpowiedź.";
+                fb.className = "h-8 font-bold text-emerald-400 text-sm";
+            } else {
+                fb.innerText = "Błędna odpowiedź. Spróbuj jeszcze raz przeliczyć.";
+                fb.className = "h-8 font-bold text-rose-400 text-sm";
+            }
+        }
+
+        // --- PLOTTING LOGIC ---
+        let introChart = null;
+        function initIntroPlot() {
+            const ctx = document.getElementById('introChart');
+            if (!ctx) return;
+            if (introChart) introChart.destroy();
+
+            introChart = new Chart(ctx.getContext('2d'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Wektor AB',
+                        data: [
+                            { x: state.points.ax, y: state.points.ay },
+                            { x: state.points.bx, y: state.points.by }
+                        ],
+                        showLine: true,
+                        borderColor: '#6366f1',
+                        borderWidth: 3,
+                        backgroundColor: '#6366f1',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: ['#fff', '#6366f1'],
+                        pointBorderColor: '#6366f1',
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            min: 0, 
+                            max: 10, 
+                            grid: { color: '#334155' }, 
+                            ticks: { color: '#94a3b8', font: { family: 'monospace' } } 
+                        },
+                        y: { 
+                            min: 0, 
+                            max: 10, 
+                            grid: { color: '#334155' }, 
+                            ticks: { color: '#94a3b8', font: { family: 'monospace' } } 
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNav();
+            renderView();
+            document.getElementById('mobile-toggle').addEventListener('click', () => {
+                document.getElementById('mobile-menu').classList.toggle('hidden');
+            });
+        });
+
+    </script>
+</body>
+</html>

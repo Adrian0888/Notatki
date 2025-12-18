@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometria Hub: Proste i Płaszczyzny</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: auto;
+            height: 300px;
+        }
+        .tab-active {
+            border-bottom: 3px solid #6366f1;
+            color: #312e81;
+            background-color: #eef2ff;
+        }
+        .tab-inactive {
+            border-bottom: 3px solid transparent;
+            color: #64748b;
+        }
+        .tab-inactive:hover {
+            color: #1e293b;
+            background-color: #f1f5f9;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .math-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+    <!-- Chosen Palette: Indigo, Slate, and Sky Blue. A technical, precise palette for analytical geometry. -->
+    
+    <!-- Application Structure Plan: 
+         Interactive SPA for Vector and Analytical Geometry.
+         Tabs:
+         1. Podstawy & Operacje: Recap of vector basics.
+         2. Mnożenie: Scalar, Cross, Triple products.
+         3. Proste: Parametric and general equations of lines.
+         4. Płaszczyzny: Normal vectors and plane equations.
+         5. Relacje: Intersection and mutual positioning.
+         6. Finał: Tests, applications in CAD/Robotics, and Preview of Calculus.
+    -->
+
+    <!-- Visualization & Content Choices:
+         - Line intersection logic: Step-by-step substitution display.
+         - 3D Plane logic: Explaining normal vectors as the "fingerprint" of the plane.
+         - CAD/Graphics: Direct link between vector math and modern technology.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-indigo-600">Geometria<span class="text-slate-800">Hub</span></span>
+                </div>
+                <div class="hidden md:flex space-x-1 h-full items-end" id="main-nav"></div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-toggle" class="text-slate-600 text-2xl">&#9776;</button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-50 border-t border-slate-200"></div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="app-content" class="fade-in"></div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>&copy; 2025 Geometria Analityczna: Od Wektorów do Płaszczyzn. MathJax Enabled.</p>
+    </footer>
+
+    <script>
+        const state = {
+            activeTab: 'intro',
+        };
+
+        const tabs = [
+            { id: 'intro', label: '1. Wektory' },
+            { id: 'multiply', label: '2. Mnożenie' },
+            { id: 'lines', label: '3. Proste' },
+            { id: 'planes', label: '4. Płaszczyzny' },
+            { id: 'rel', label: '5. Relacje' },
+            { id: 'final', label: '6. Finał' }
+        ];
+
+        function renderNav() {
+            const nav = document.getElementById('main-nav');
+            const mobile = document.getElementById('mobile-menu');
+            let nHtml = '', mHtml = '';
+
+            tabs.forEach(t => {
+                const active = state.activeTab === t.id;
+                nHtml += `<button onclick="setTab('${t.id}')" class="${active ? 'tab-active' : 'tab-inactive'} px-3 py-4 text-[10px] font-bold uppercase tracking-wider transition-all focus:outline-none">${t.label}</button>`;
+                mHtml += `<button onclick="setTab('${t.id}')" class="${active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'} block w-full text-left px-4 py-3 border-l-4 ${active ? 'border-indigo-500' : 'border-transparent'}">${t.label}</button>`;
+            });
+            nav.innerHTML = nHtml;
+            mobile.innerHTML = mHtml;
+        }
+
+        function setTab(id) {
+            state.activeTab = id;
+            renderNav();
+            renderView();
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function renderView() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = '';
+
+            switch (state.activeTab) {
+                case 'intro': renderIntro(container); break;
+                case 'multiply': renderMultiply(container); break;
+                case 'lines': renderLines(container); break;
+                case 'planes': renderPlanes(container); break;
+                case 'rel': renderRel(container); break;
+                case 'final': renderFinal(container); break;
+            }
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        // --- 1. RECAP: VECTORS ---
+        function renderIntro(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div class="space-y-6">
+                        <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">Fundamenty: Wektory</h1>
+                        <p class="text-slate-600">Zanim opiszesz całą przestrzeń, musisz opanować operacje na jej podstawowych cegiełkach.</p>
+                        <div class="math-card">
+                            <h3 class="font-bold text-indigo-600 mb-2">Suma i Skalowanie</h3>
+                            <p class="text-sm">$\\vec{u} + \\vec{v} = [u_x+v_x, u_y+v_y, u_z+v_z]$</p>
+                            <p class="text-sm mt-2">$k \\cdot \\vec{v} = [kx, ky, kz]$</p>
+                        </div>
+                        <div class="math-card bg-indigo-50 border-indigo-100">
+                            <h3 class="font-bold text-indigo-900 mb-2">Normalizacja</h3>
+                            <p class="text-sm">Wersor: $\\hat{v} = \\frac{\\vec{v}}{|\\vec{v}|}$, gdzie $|\\vec{v}| = \\sqrt{x^2+y^2+z^2}$.</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 rounded-3xl p-8 flex flex-col justify-center">
+                        <div class="chart-container"><canvas id="introChart"></canvas></div>
+                    </div>
+                </div>
+            `;
+            setTimeout(initIntroChart, 50);
+        }
+
+        // --- 2. MULTIPLY RECAP ---
+        function renderMultiply(container) {
+            container.innerHTML = `
+                <div class="space-y-8">
+                    <h2 class="text-3xl font-bold text-center">Mnożenie Wektorów</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="math-card">
+                            <h4 class="font-bold text-indigo-600 mb-2">Iloczyn Skalarny</h4>
+                            <p class="text-xs mb-4">Wynik to <b>liczba</b>. Służy do badania kątów.</p>
+                            <p class="font-mono text-sm">$\\vec{u} \\cdot \\vec{v} = |u||v|\\cos\\theta$</p>
+                        </div>
+                        <div class="math-card">
+                            <h4 class="font-bold text-indigo-600 mb-2">Iloczyn Wektorowy</h4>
+                            <p class="text-xs mb-4">Wynik to <b>wektor prostopadły</b>. Tylko w 3D.</p>
+                            <p class="font-mono text-sm">$\\vec{u} \\times \\vec{v} = \\vec{w} \\perp u, v$</p>
+                        </div>
+                        <div class="math-card">
+                            <h4 class="font-bold text-indigo-600 mb-2">Iloczyn Mieszany</h4>
+                            <p class="text-xs mb-4">Wynik to <b>objętość</b> równoległościanu.</p>
+                            <p class="font-mono text-sm">$(\\vec{u}, \\vec{v}, \\vec{w}) = \\vec{u} \\cdot (\\vec{v} \\times \\vec{w})$</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 3. LINES (PROSTE) ---
+        function renderLines(container) {
+            container.innerHTML = `
+                <div class="space-y-10">
+                    <div class="text-center max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 1: Analityczny Opis Prostej</h2>
+                        <p class="text-slate-600">Prosta w przestrzeni to nieskończony zbiór punktów wyznaczony przez kierunek i jeden punkt startowy.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-6">
+                            <div class="math-card">
+                                <h3 class="font-bold text-indigo-600 mb-3 underline underline-offset-4">Równanie Parametryczne</h3>
+                                <p class="text-sm text-slate-600 mb-4">Mając punkt $P(x_0, y_0, z_0)$ i wektor kierunkowy $\\vec{v} = [a, b, c]$:</p>
+                                <div class="bg-slate-50 p-4 rounded-xl font-mono text-sm leading-relaxed">
+                                    $x = x_0 + at$ <br>
+                                    $y = y_0 + bt$ <br>
+                                    $z = z_0 + ct$
+                                </div>
+                                <p class="text-xs text-slate-400 mt-2">Gdzie $t \\in \\mathbb{R}$ to parametr (czas podróży po prostej).</p>
+                            </div>
+                            <div class="math-card bg-indigo-50 border-indigo-100">
+                                <h3 class="font-bold text-indigo-900 mb-2 italic">Prosta przez dwa punkty</h3>
+                                <p class="text-xs text-indigo-800">Jeśli masz punkty A i B, wektor kierunkowy to po prostu $\\vec{v} = \\vec{AB} = B - A$.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl">
+                            <h3 class="text-xl font-bold mb-6 text-indigo-400 text-center">Generator Prostej</h3>
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="col-span-3 text-xs font-bold text-slate-500 uppercase">Punkt $P_0$</div>
+                                    <input type="number" id="lx0" value="1" class="bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="ly0" value="2" class="bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="lz0" value="3" class="bg-slate-800 p-2 rounded text-center">
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="col-span-3 text-xs font-bold text-slate-500 uppercase">Wektor $\\vec{v}$</div>
+                                    <input type="number" id="lva" value="4" class="bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="lvb" value="5" class="bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="lvc" value="6" class="bg-slate-800 p-2 rounded text-center">
+                                </div>
+                                <button onclick="calculateLine()" class="w-full bg-indigo-600 py-3 rounded-xl font-bold hover:bg-indigo-500">Generuj Równanie</button>
+                                <div id="line-res" class="p-4 bg-slate-800 border border-slate-700 rounded-xl hidden text-indigo-300 font-mono text-sm leading-relaxed"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateLine() {
+            const x0 = document.getElementById('lx0').value;
+            const y0 = document.getElementById('ly0').value;
+            const z0 = document.getElementById('lz0').value;
+            const a = document.getElementById('lva').value;
+            const b = document.getElementById('lvb').value;
+            const c = document.getElementById('lvc').value;
+            
+            const res = document.getElementById('line-res');
+            res.classList.remove('hidden');
+            res.innerHTML = `
+                Równanie parametryczne: <br>
+                x = ${x0} ${a >= 0 ? '+' : ''} ${a}t <br>
+                y = ${y0} ${b >= 0 ? '+' : ''} ${b}t <br>
+                z = ${z0} ${c >= 0 ? '+' : ''} ${c}t
+            `;
+        }
+
+        // --- 4. PLANES (PŁASZCZYZNY) ---
+        function renderPlanes(container) {
+            container.innerHTML = `
+                <div class="space-y-10">
+                    <div class="text-center max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 2: Analityczny Opis Płaszczyzny</h2>
+                        <p class="text-slate-600">Płaszczyzna jest wyznaczona przez jeden punkt i jeden wektor prostopadły, który ją "blokuje" w przestrzeni.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-6">
+                            <div class="math-card">
+                                <h3 class="font-bold text-indigo-600 mb-3 underline underline-offset-4">Równanie Ogólne</h3>
+                                <p class="text-sm text-slate-600 mb-4">Mając punkt $P(x_0, y_0, z_0)$ i wektor normalny $\\vec{n} = [A, B, C]$:</p>
+                                <div class="bg-slate-50 p-4 rounded-xl font-mono text-center text-lg">
+                                    $A(x-x_0) + B(y-y_0) + C(z-z_0) = 0$
+                                </div>
+                                <p class="text-xs text-slate-500 mt-4 italic">Po rozwinięciu otrzymujemy postać: $Ax + By + Cz + D = 0$.</p>
+                            </div>
+                            <div class="math-card">
+                                <h3 class="font-bold text-indigo-600 mb-2">Płaszczyzna przez 3 punkty</h3>
+                                <p class="text-xs text-slate-600">1. Stwórz dwa wektory $\\vec{u} = B-A$ oraz $\\vec{v} = C-A$.<br>2. Oblicz ich iloczyn wektorowy $\\vec{n} = \\vec{u} \\times \\vec{v}$.<br>3. Masz wektor normalny i punkt A!</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl">
+                            <h3 class="text-xl font-bold mb-6 text-center">Kreator Płaszczyzny</h3>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="col-span-3 text-xs font-bold text-indigo-200 uppercase">Punkt $P(1, 2, 0)$</div>
+                                    <input type="number" id="px0" value="1" class="bg-indigo-700 p-2 rounded text-center">
+                                    <input type="number" id="py0" value="2" class="bg-indigo-700 p-2 rounded text-center">
+                                    <input type="number" id="pz0" value="0" class="bg-indigo-700 p-2 rounded text-center">
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div class="col-span-3 text-xs font-bold text-indigo-200 uppercase">Wektor Normalny $\\vec{n}[3, 4, 5]$</div>
+                                    <input type="number" id="pna" value="3" class="bg-indigo-700 p-2 rounded text-center">
+                                    <input type="number" id="pnb" value="4" class="bg-indigo-700 p-2 rounded text-center">
+                                    <input type="number" id="pnc" value="5" class="bg-indigo-700 p-2 rounded text-center">
+                                </div>
+                                <button onclick="calculatePlane()" class="w-full bg-white text-indigo-600 font-bold py-3 rounded-xl shadow-lg">Wylicz Równanie Ogólne</button>
+                                <div id="plane-res" class="mt-4 p-4 bg-indigo-700 rounded-xl hidden text-center font-mono font-bold"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculatePlane() {
+            const x0 = parseFloat(document.getElementById('px0').value);
+            const y0 = parseFloat(document.getElementById('py0').value);
+            const z0 = parseFloat(document.getElementById('pz0').value);
+            const a = parseFloat(document.getElementById('pna').value);
+            const b = parseFloat(document.getElementById('pnb').value);
+            const c = parseFloat(document.getElementById('pnc').value);
+
+            const d = -(a*x0 + b*y0 + c*z0);
+            const res = document.getElementById('plane-res');
+            res.classList.remove('hidden');
+            res.innerText = `${a}x ${b>=0?'+':''} ${b}y ${c>=0?'+':''} ${c}z ${d>=0?'+':''} ${d} = 0`;
+        }
+
+        // --- 5. RELATIONS (WZZAJEMNE POŁOŻENIE) ---
+        function renderRel(container) {
+            container.innerHTML = `
+                <div class="space-y-10">
+                    <div class="text-center max-w-2xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 3: Wzajemne Położenie</h2>
+                        <p class="text-slate-600">Jak zbadać czy obiekty się przecinają, są równoległe czy prostopadłe?</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="math-card">
+                            <h4 class="font-bold text-indigo-600 mb-2">Dwie Płaszczyzny</h4>
+                            <p class="text-xs text-slate-500 mb-3 italic">Badaj wektory normalne $\\vec{n}_1$ i $\\vec{n}_2$.</p>
+                            <ul class="text-[10px] space-y-1 text-slate-600">
+                                <li>$\\|$: $\\vec{n}_1$ i $\\vec{n}_2$ są równoległe.</li>
+                                <li>$\\perp$: $\\vec{n}_1 \\cdot \\vec{n}_2 = 0$.</li>
+                                <li>Przecięcie: Krawędzią jest prosta.</li>
+                            </ul>
+                        </div>
+                        <div class="math-card">
+                            <h4 class="font-bold text-indigo-600 mb-2">Dwie Proste</h4>
+                            <p class="text-xs text-slate-500 mb-3 italic">Badaj wektory kierunkowe $\\vec{v}_1$ i $\\vec{v}_2$.</p>
+                            <ul class="text-[10px] space-y-1 text-slate-600">
+                                <li>$\\|$: $\\vec{v}_1 = k \\vec{v}_2$.</li>
+                                <li>Skośne: Brak punktów wspólnych i nierównoległe.</li>
+                            </ul>
+                        </div>
+                        <div class="math-card">
+                            <h4 class="font-bold text-indigo-600 mb-2">Prosta i Płaszczyzna</h4>
+                            <p class="text-xs text-slate-500 mb-3 italic">Badaj $\\vec{v}$ prostej i $\\vec{n}$ płaszczyzny.</p>
+                            <ul class="text-[10px] space-y-1 text-slate-600">
+                                <li>$\\|$: $\\vec{v} \\cdot \\vec{n} = 0$.</li>
+                                <li>$\\perp$: $\\vec{v}$ jest równoległy do $\\vec{n}$.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-10 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-6 text-indigo-400 text-center">Symulator Punktu Przecięcia</h3>
+                        <p class="text-sm text-slate-400 mb-8 text-center">Znajdźmy punkt wspólny prostej i płaszczyzny $Ax+By+Cz+D=0$.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div class="space-y-4">
+                                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                    <h4 class="text-xs font-bold text-indigo-300 uppercase mb-2">Prosta $L(t)$</h4>
+                                    <p class="text-xs font-mono">$x = 1 + t$ <br> $y = 2 + t$ <br> $z = 3 + 5t$</p>
+                                </div>
+                                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                                    <h4 class="text-xs font-bold text-emerald-300 uppercase mb-2">Płaszczyzna $\pi$</h4>
+                                    <p class="text-xs font-mono">$2x + 3y - z = 6$</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-col justify-center">
+                                <button onclick="solveIntersection()" class="bg-indigo-600 hover:bg-indigo-500 py-3 rounded-xl font-bold transition-transform active:scale-95 shadow-lg">Rozwiąż Krok po Kroku</button>
+                                <div id="solve-step" class="mt-4 p-4 bg-slate-800 rounded-xl hidden text-[10px] leading-relaxed font-mono"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function solveIntersection() {
+            const step = document.getElementById('solve-step');
+            step.classList.remove('hidden');
+            step.innerHTML = `
+                <span class="text-indigo-400">1. Podstawiamy proste do płaszczyzny:</span><br>
+                2(1+t) + 3(2+t) - (3+5t) = 6 <br>
+                <span class="text-indigo-400">2. Wymnażamy nawiasy:</span><br>
+                2 + 2t + 6 + 3t - 3 - 5t = 6 <br>
+                <span class="text-indigo-400">3. Redukujemy wyrazy:</span><br>
+                (2t + 3t - 5t) + (2 + 6 - 3) = 6 <br>
+                0t + 5 = 6 <br>
+                <span class="text-rose-400 font-bold">4. Wynik: 5 = 6 (Sprzeczność!)</span><br>
+                Wniosek: Prosta jest równoległa do płaszczyzny i nie ma z nią punktów wspólnych.
+            `;
+        }
+
+        // --- 6. FINAL ---
+        function renderFinal(container) {
+            container.innerHTML = `
+                <div class="space-y-12">
+                    <div class="text-center">
+                        <h2 class="text-4xl font-bold text-slate-900 mb-4 tracking-tight">Koniec Rozdziału: Geometria Analityczna</h2>
+                        <p class="text-slate-600 max-w-xl mx-auto italic">"Umiem już opisywać obiekty w przestrzeni za pomocą algebry. Co dalej?"</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="math-card hover:border-indigo-300 transition-colors">
+                            <h3 class="font-bold text-indigo-600 mb-4 flex items-center"><span class="mr-2">🖥️</span> Grafika Komputerowa</h3>
+                            <p class="text-xs text-slate-600">Równania płaszczyzn definiują ściany obiektów 3D. Clipping (obcinanie sceny) polega na sprawdzaniu, po której stronie płaszczyzny "frustum" kamery znajduje się punkt.</p>
+                        </div>
+                        <div class="math-card hover:border-indigo-300 transition-colors">
+                            <h3 class="font-bold text-indigo-600 mb-4 flex items-center"><span class="mr-2">🦾</span> Robotyka i CAD</h3>
+                            <p class="text-xs text-slate-600">Planowanie ścieżki ruchu ramienia robota to wyznaczanie kolejnych prostych i płaszczyzn ograniczających ruch, aby uniknąć kolizji z przeszkodami.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-900 text-white p-12 rounded-3xl shadow-2xl relative overflow-hidden">
+                        <div class="relative z-10">
+                            <h3 class="text-2xl font-bold mb-4 text-center">Zbiorczy Test Geometrii</h3>
+                            <div class="space-y-4 max-w-md mx-auto">
+                                <div class="bg-indigo-800 p-4 rounded-xl border border-indigo-700">
+                                    <p class="text-xs mb-3">1. Co jest wektorem kierunkowym prostej przechodzącej przez A(1,1,1) i B(3,4,5)?</p>
+                                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                        <button onclick="checkTest(1, true)" class="p-2 bg-indigo-700 rounded hover:bg-indigo-600">[2, 3, 4]</button>
+                                        <button onclick="checkTest(1, false)" class="p-2 bg-indigo-700 rounded hover:bg-indigo-600">[4, 5, 6]</button>
+                                    </div>
+                                </div>
+                                <div class="bg-indigo-800 p-4 rounded-xl border border-indigo-700">
+                                    <p class="text-xs mb-3">2. Jeśli wektor normalny płaszczyzny to [1, 2, 3], to płaszczyzna jest prostopadła do osi OX?</p>
+                                    <div class="grid grid-cols-2 gap-2 text-[10px]">
+                                        <button onclick="checkTest(2, false)" class="p-2 bg-indigo-700 rounded hover:bg-indigo-600">Tak</button>
+                                        <button onclick="checkTest(2, true)" class="p-2 bg-indigo-700 rounded hover:bg-indigo-600">Nie</button>
+                                    </div>
+                                </div>
+                                <div id="final-fb" class="text-center font-bold h-4 text-indigo-300"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 p-10 rounded-3xl border border-emerald-100 text-center">
+                        <h3 class="text-xl font-bold text-emerald-900 mb-4">Gratulacje! Czas na kolejny wielki krok.</h3>
+                        <p class="text-emerald-700 text-sm max-w-xl mx-auto mb-8">Opanowałeś geometrię obiektów statycznych. Teraz nauczymy się opisywać ruch i dynamikę.</p>
+                        <div class="inline-block p-6 bg-white rounded-2xl shadow-sm border border-emerald-100">
+                            <p class="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2">Zapowiedź kolejnego działu</p>
+                            <p class="text-slate-900 font-bold text-xl mb-2">Rachunek Różniczkowy i Całkowy</p>
+                            <p class="text-slate-500 text-xs">Poznasz narzędzia do opisu ciągłej zmiany, obliczania tempa wzrostu (pochodne) oraz sumowania nieskończenie małych części (całki).</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkTest(q, correct) {
+            const fb = document.getElementById('final-fb');
+            fb.innerText = correct ? "Poprawnie!" : "Spróbuj jeszcze raz.";
+            fb.className = `text-center font-bold h-4 ${correct ? 'text-emerald-400' : 'text-rose-400'}`;
+        }
+
+        function initIntroChart() {
+            const ctx = document.getElementById('introChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Przesunięcie',
+                        data: [{ x: 1, y: 1 }, { x: 4, y: 5 }],
+                        showLine: true,
+                        borderColor: '#6366f1',
+                        borderWidth: 3,
+                        backgroundColor: '#6366f1',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { min: 0, max: 6, grid: { color: '#334155' } },
+                        y: { min: 0, max: 6, grid: { color: '#334155' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNav();
+            renderView();
+            document.getElementById('mobile-toggle').addEventListener('click', () => {
+                document.getElementById('mobile-menu').classList.toggle('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

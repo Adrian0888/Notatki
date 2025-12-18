@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometria Hub: Zaawansowane Wektory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: auto;
+            height: 300px;
+        }
+        .tab-active {
+            border-bottom: 3px solid #6366f1;
+            color: #312e81;
+            background-color: #eef2ff;
+        }
+        .tab-inactive {
+            border-bottom: 3px solid transparent;
+            color: #64748b;
+        }
+        .tab-inactive:hover {
+            color: #1e293b;
+            background-color: #f1f5f9;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-indigo-600">Geometria<span class="text-slate-800">Hub</span></span>
+                </div>
+                <div class="hidden md:flex space-x-1 h-full items-end" id="main-nav"></div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-toggle" class="text-slate-600 text-2xl">&#9776;</button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-slate-50 border-t border-slate-200"></div>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+        <div id="app-content" class="fade-in"></div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>&copy; 2025 Interaktywne Kompendium Wektorów. Poprawiono błędy renderowania matematycznego.</p>
+    </footer>
+
+    <script>
+        const state = {
+            activeTab: 'intro',
+            points: { ax: 1, ay: 2, bx: 5, by: 5 }
+        };
+
+        const tabs = [
+            { id: 'intro', label: '1. Podstawy' },
+            { id: 'scalar', label: '2. Skalarny' },
+            { id: 'cross', label: '3. Wektorowy' },
+            { id: 'triple', label: '4. Mieszany' },
+            { id: 'final', label: '5. Finał' }
+        ];
+
+        function renderNav() {
+            const nav = document.getElementById('main-nav');
+            const mobile = document.getElementById('mobile-menu');
+            let nHtml = '', mHtml = '';
+
+            tabs.forEach(t => {
+                const active = state.activeTab === t.id;
+                nHtml += `<button onclick="setTab('${t.id}')" class="${active ? 'tab-active' : 'tab-inactive'} px-4 py-4 text-xs font-bold uppercase tracking-widest transition-all focus:outline-none">${t.label}</button>`;
+                mHtml += `<button onclick="setTab('${t.id}')" class="${active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600'} block w-full text-left px-4 py-3 border-l-4 ${active ? 'border-indigo-500' : 'border-transparent'}">${t.label}</button>`;
+            });
+            nav.innerHTML = nHtml;
+            mobile.innerHTML = mHtml;
+        }
+
+        function setTab(id) {
+            state.activeTab = id;
+            renderNav();
+            renderView();
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function renderView() {
+            const container = document.getElementById('app-content');
+            container.innerHTML = '';
+
+            switch (state.activeTab) {
+                case 'intro': renderIntro(container); break;
+                case 'scalar': renderScalar(container); break;
+                case 'cross': renderCross(container); break;
+                case 'triple': renderTriple(container); break;
+                case 'final': renderFinal(container); break;
+            }
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise();
+            }
+        }
+
+        // --- 1. INTRO ---
+        function renderIntro(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    <div class="space-y-8">
+                        <div>
+                            <h1 class="text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">Geometria Wektorów</h1>
+                            <p class="text-lg text-slate-600">Rozróżnienie punktu od wektora oraz podstawowe definicje.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-slate-800 mb-3 italic">Punkt vs Wektor</h3>
+                            <p class="text-slate-600 text-sm">
+                                <b>Punkt:</b> Lokalizacja $P(x, y)$. <br>
+                                <b>Wektor:</b> Instrukcja przesunięcia $\\vec{AB} = [x_B - x_A, y_B - y_A]$.
+                            </p>
+                        </div>
+                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                            <h3 class="font-bold text-indigo-900 mb-2">Długość Wektora</h3>
+                            <p class="text-indigo-800 text-sm">Norma (długość) wektora $[x, y, z]$:</p>
+                            <div class="mt-2 font-mono text-center text-xl text-indigo-600">
+                                $|\\vec{v}| = \\sqrt{x^2 + y^2 + z^2}$
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl">
+                        <div class="chart-container">
+                            <canvas id="introChart"></canvas>
+                        </div>
+                        <p class="text-center text-slate-400 text-xs mt-4 uppercase">Wizualizacja wektora $\\vec{AB}$</p>
+                    </div>
+                </div>
+            `;
+            setTimeout(initIntroPlot, 100);
+        }
+
+        // --- 2. SCALAR ---
+        function renderScalar(container) {
+            container.innerHTML = `
+                <div class="space-y-10">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 1: Iloczyn Skalarny</h2>
+                        <p class="text-slate-600">Służy do badania kątów i rzutu jednego wektora na drugi.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-600 mb-4">Definicje</h3>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-slate-50 rounded-xl">
+                                    <p class="text-xs font-bold text-slate-400 mb-2 uppercase">Algebraiczna</p>
+                                    <p class="text-lg">$\\vec{u} \\cdot \\vec{v} = u_x v_x + u_y v_y + u_z v_z$</p>
+                                </div>
+                                <div class="p-4 bg-slate-50 rounded-xl">
+                                    <p class="text-xs font-bold text-slate-400 mb-2 uppercase">Geometryczna</p>
+                                    <p class="text-lg">$\\vec{u} \\cdot \\vec{v} = |\\vec{u}| |\\vec{v}| \\cos \\theta$</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                            <h3 class="font-bold text-indigo-900 mb-4">Interpretacja Wyniku</h3>
+                            <ul class="space-y-4 text-sm text-indigo-800">
+                                <li><b>Dodatni:</b> Kąt ostry ($< 90^\\circ$)</li>
+                                <li><b>Ujemny:</b> Kąt rozwarty ($> 90^\\circ$)</li>
+                                <li class="font-bold text-indigo-600">Zero: Wektory PROSTOPADŁE (90°)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl">
+                        <h3 class="text-xl font-bold mb-6 text-indigo-400 text-center">Kalkulator Kąta</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-4">
+                                <div class="flex gap-2 items-center text-sm">
+                                    <span class="w-8">$\\vec{u}$</span>
+                                    <input type="number" id="ux" value="1" class="w-full bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="uy" value="2" class="w-full bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="uz" value="3" class="w-full bg-slate-800 p-2 rounded text-center">
+                                </div>
+                                <div class="flex gap-2 items-center text-sm">
+                                    <span class="w-8">$\\vec{v}$</span>
+                                    <input type="number" id="vx" value="-2" class="w-full bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="vy" value="1" class="w-full bg-slate-800 p-2 rounded text-center">
+                                    <input type="number" id="vz" value="0" class="w-full bg-slate-800 p-2 rounded text-center">
+                                </div>
+                                <button onclick="calculateScalar()" class="w-full bg-indigo-600 py-3 rounded-xl font-bold hover:bg-indigo-500">Oblicz i Sprawdź</button>
+                            </div>
+                            <div id="scalar-res" class="bg-slate-800 p-6 rounded-2xl border border-slate-700 hidden">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs">Wynik Skalarny</span> <span id="res-val" class="font-bold text-indigo-300">0</span></div>
+                                    <div class="flex justify-between items-center"><span class="text-slate-400 text-xs">$\\cos \\theta$</span> <span id="res-cos" class="font-mono">0.00</span></div>
+                                    <div id="res-rel" class="text-center p-2 rounded bg-indigo-900 text-indigo-200 font-bold text-sm">Wektory prostopadłe</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateScalar() {
+            const ux = parseFloat(document.getElementById('ux').value) || 0;
+            const uy = parseFloat(document.getElementById('uy').value) || 0;
+            const uz = parseFloat(document.getElementById('uz').value) || 0;
+            const vx = parseFloat(document.getElementById('vx').value) || 0;
+            const vy = parseFloat(document.getElementById('vy').value) || 0;
+            const vz = parseFloat(document.getElementById('vz').value) || 0;
+            const scalar = ux*vx + uy*vy + uz*vz;
+            const lu = Math.sqrt(ux*ux + uy*uy + uz*uz);
+            const lv = Math.sqrt(vx*vx + vy*vy + vz*vz);
+            const cos = (lu > 0 && lv > 0) ? (scalar / (lu * lv)) : 0;
+            document.getElementById('scalar-res').classList.remove('hidden');
+            document.getElementById('res-val').innerText = scalar;
+            document.getElementById('res-cos').innerText = cos.toFixed(4);
+            const rel = document.getElementById('res-rel');
+            if (Math.abs(scalar) < 0.001) { rel.innerText = "PROSTOPADŁE"; rel.className = "text-center p-2 rounded bg-emerald-900 text-emerald-200 font-bold"; }
+            else if (scalar > 0) { rel.innerText = "KĄT OSTRY"; rel.className = "text-center p-2 rounded bg-indigo-900 text-indigo-200 font-bold"; }
+            else { rel.innerText = "KĄT ROZWARTY"; rel.className = "text-center p-2 rounded bg-rose-900 text-rose-200 font-bold"; }
+        }
+
+        // --- 3. CROSS ---
+        function renderCross(container) {
+            container.innerHTML = `
+                <div class="space-y-10">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 2: Iloczyn Wektorowy (3D)</h2>
+                        <p class="text-slate-600">Wynikiem jest <b>nowy wektor</b> prostopadły do obu składników.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-600 mb-4">Metoda Wyznacznika</h3>
+                            <div class="p-4 bg-slate-50 rounded-xl font-mono text-sm overflow-x-auto text-center">
+                                $\\vec{w} = \\begin{vmatrix} \\hat{i} & \\hat{j} & \\hat{k} \\\\ u_x & u_y & u_z \\\\ v_x & v_y & v_z \\end{vmatrix}$
+                            </div>
+                        </div>
+                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 text-sm">
+                            <h3 class="font-bold text-indigo-900 mb-2 italic">Sens Geometryczny</h3>
+                            <p>Długość $|\\vec{u} \\times \\vec{v}|$ jest równa <b>polu równoległoboku</b> rozpiętego na tych wektorach.</p>
+                            <p class="mt-2">Zwrot określamy <b>regułą prawej dłoni</b>.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl">
+                        <h3 class="text-xl font-bold mb-6 text-center">Kalkulator $\\vec{u} \\times \\vec{v}$</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+                            <div class="space-y-4">
+                                <div class="flex gap-2 items-center"><span class="w-8">$\\vec{u}$</span>
+                                <input type="number" id="cux" value="1" class="w-full bg-indigo-700 p-2 rounded text-center">
+                                <input type="number" id="cuy" value="0" class="w-full bg-indigo-700 p-2 rounded text-center">
+                                <input type="number" id="cuz" value="0" class="w-full bg-indigo-700 p-2 rounded text-center"></div>
+                                <div class="flex gap-2 items-center"><span class="w-8">$\\vec{v}$</span>
+                                <input type="number" id="cvx" value="0" class="w-full bg-indigo-700 p-2 rounded text-center">
+                                <input type="number" id="cvy" value="1" class="w-full bg-indigo-700 p-2 rounded text-center">
+                                <input type="number" id="cvz" value="0" class="w-full bg-indigo-700 p-2 rounded text-center"></div>
+                                <button onclick="calculateCross()" class="w-full bg-white text-indigo-600 font-bold py-2 rounded-xl">Oblicz Wektor</button>
+                            </div>
+                            <div class="lg:col-span-2 bg-indigo-700 p-6 rounded-2xl border border-indigo-500 hidden" id="cross-res">
+                                <div class="grid grid-cols-2 gap-4 text-center">
+                                    <div><p class="text-xs opacity-60">Wektor Wynikowy</p><p id="res-cv" class="text-2xl font-black font-mono">[0, 0, 1]</p></div>
+                                    <div><p class="text-xs opacity-60">Pole Powierzchni</p><p id="res-ca" class="text-2xl font-black">1.00</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateCross() {
+            const ux = parseFloat(document.getElementById('cux').value) || 0;
+            const uy = parseFloat(document.getElementById('cuy').value) || 0;
+            const uz = parseFloat(document.getElementById('cuz').value) || 0;
+            const vx = parseFloat(document.getElementById('cvx').value) || 0;
+            const vy = parseFloat(document.getElementById('cvy').value) || 0;
+            const vz = parseFloat(document.getElementById('cvz').value) || 0;
+            const rx = uy*vz - uz*vy; const ry = uz*vx - ux*vz; const rz = ux*vy - uy*vx;
+            const area = Math.sqrt(rx*rx + ry*ry + rz*rz);
+            document.getElementById('cross-res').classList.remove('hidden');
+            document.getElementById('res-cv').innerText = `[${rx}, ${ry}, ${rz}]`;
+            document.getElementById('res-ca').innerText = area.toFixed(2);
+        }
+
+        // --- 4. TRIPLE ---
+        function renderTriple(container) {
+            container.innerHTML = `
+                <div class="space-y-10">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Temat 3: Iloczyn Mieszany</h2>
+                        <p class="text-slate-600">Służy do obliczania objętości brył (równoległościanu).</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-600 mb-3">Definicja</h3>
+                            <div class="p-4 bg-slate-50 rounded-xl font-mono text-center text-lg">
+                                $(\\vec{u}, \\vec{v}, \\vec{w}) = \\vec{u} \\cdot (\\vec{v} \\times \\vec{w})$
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-600 mb-3 italic">Objętość</h3>
+                            <p class="text-sm">Wartość bezwzględna wyniku to <b>objętość</b> bryły. Jeśli wynik to 0, wektory są <b>współpłaszczyznowe</b>.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl">
+                        <h3 class="text-xl font-bold mb-6 text-center text-indigo-400">Badanie Bryły</h3>
+                        <div class="grid grid-cols-3 gap-2 mb-6">
+                            <div class="space-y-2"><input type="number" id="tux" value="2" class="w-full bg-slate-800 p-2 rounded text-center"><input type="number" id="tuy" value="0" class="w-full bg-slate-800 p-2 rounded text-center"><input type="number" id="tuz" value="0" class="w-full bg-slate-800 p-2 rounded text-center"></div>
+                            <div class="space-y-2"><input type="number" id="tvx" value="0" class="w-full bg-slate-800 p-2 rounded text-center"><input type="number" id="tvy" value="3" class="w-full bg-slate-800 p-2 rounded text-center"><input type="number" id="tvz" value="0" class="w-full bg-slate-800 p-2 rounded text-center"></div>
+                            <div class="space-y-2"><input type="number" id="twx" value="0" class="w-full bg-slate-800 p-2 rounded text-center"><input type="number" id="twy" value="0" class="w-full bg-slate-800 p-2 rounded text-center"><input type="number" id="twz" value="4" class="w-full bg-slate-800 p-2 rounded text-center"></div>
+                        </div>
+                        <button onclick="calculateTriple()" class="w-full bg-indigo-600 py-3 rounded-xl font-bold">Oblicz Objętość</button>
+                        <div id="triple-res" class="mt-6 p-6 bg-slate-800 border border-slate-700 rounded-2xl hidden text-center">
+                            <p class="text-xs text-slate-400 uppercase">Objętość Bryły</p>
+                            <p id="res-tv" class="text-4xl font-black text-indigo-300">24</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateTriple() {
+            const ux = parseFloat(document.getElementById('tux').value) || 0;
+            const uy = parseFloat(document.getElementById('tuy').value) || 0;
+            const uz = parseFloat(document.getElementById('tuz').value) || 0;
+            const vx = parseFloat(document.getElementById('tvx').value) || 0;
+            const vy = parseFloat(document.getElementById('tvy').value) || 0;
+            const vz = parseFloat(document.getElementById('tvz').value) || 0;
+            const wx = parseFloat(document.getElementById('twx').value) || 0;
+            const wy = parseFloat(document.getElementById('twy').value) || 0;
+            const wz = parseFloat(document.getElementById('twz').value) || 0;
+            const val = ux * (vy*wz - vz*wy) - uy * (vx*wz - vz*wx) + uz * (vx*wy - vy*wx);
+            document.getElementById('triple-res').classList.remove('hidden');
+            document.getElementById('res-tv').innerText = Math.abs(val);
+        }
+
+        // --- 5. FINAL ---
+        function renderFinal(container) {
+            container.innerHTML = `
+                <div class="space-y-12">
+                    <div class="text-center">
+                        <h2 class="text-4xl font-bold text-slate-900 mb-4">Finał Modułu</h2>
+                        <p class="text-slate-600">Test sprawdzający i zastosowania w nauce.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-600 mb-2">🔭 Fizyka</h3>
+                            <p class="text-sm text-slate-600">Iloczyn skalarny to praca siły $W = \\vec{F} \\cdot \\vec{s}$. Iloczyn wektorowy to moment siły $\\vec{M} = \\vec{r} \\times \\vec{F}$.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-600 mb-2">🖥️ Grafika 3D</h3>
+                            <p class="text-sm text-slate-600">Normalne powierzchni (prostopadłe wektory) służą do wyznaczania kierunku odbicia światła i cieniowania modeli.</p>
+                        </div>
+                    </div>
+                    <div class="bg-indigo-900 text-white p-10 rounded-3xl text-center shadow-2xl">
+                        <h3 class="text-xl font-bold mb-4">Gratulacje!</h3>
+                        <p class="text-indigo-200 italic">Opanowałeś zaawansowane mnożenie wektorów. Jesteś gotowy na kolejny moduł: <b>Proste i Płaszczyzny</b>.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- CHARTS & INIT ---
+        function initIntroPlot() {
+            const ctx = document.getElementById('introChart');
+            if (!ctx) return;
+            new Chart(ctx.getContext('2d'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Wektor',
+                        data: [{ x: 1, y: 2 }, { x: 5, y: 5 }],
+                        showLine: true,
+                        borderColor: '#6366f1',
+                        borderWidth: 3,
+                        backgroundColor: '#6366f1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { min: 0, max: 10, grid: { color: '#334155' } },
+                        y: { min: 0, max: 10, grid: { color: '#334155' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNav();
+            renderView();
+            document.getElementById('mobile-toggle').addEventListener('click', () => {
+                document.getElementById('mobile-menu').classList.toggle('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
