@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktywny Kurs Macierzy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        /* Niestandardowe style dla wyglądu macierzy w elementach interaktywnych */
+        .matrix-bracket {
+            position: relative;
+            padding: 10px;
+        }
+        .matrix-bracket::before, .matrix-bracket::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            border: 2px solid #333;
+        }
+        .matrix-bracket::before {
+            left: 0;
+            border-right: 0;
+            border-radius: 8px 0 0 8px;
+        }
+        .matrix-bracket::after {
+            right: 0;
+            border-left: 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .matrix-input {
+            width: 50px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <nav class="bg-blue-900 text-white p-4 sticky top-0 z-50 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Algebra Liniowa: Macierze</h1>
+            <div class="hidden md:flex space-x-4 text-sm">
+                <a href="#sec1" class="hover:text-blue-300">Wstęp</a>
+                <a href="#sec2" class="hover:text-blue-300">Specjalne</a>
+                <a href="#sec3" class="hover:text-blue-300">Operacje</a>
+                <a href="#sec4" class="hover:text-blue-300">Wyznacznik</a>
+                <a href="#sec5" class="hover:text-blue-300">Odwrotna</a>
+                <a href="#sec6" class="hover:text-blue-300">Układy równań</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6 max-w-4xl">
+
+        <section id="sec1" class="mb-12 bg-white p-8 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 border-b pb-2">1. Wprowadzenie do Macierzy</h2>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-lg mb-2">Czym jest macierz?</h3>
+                    <p class="mb-4">
+                        Wyobraź sobie macierz jako zwykłą tabelę, taką jak arkusz w Excelu. To prostokątny układ liczb uporządkowanych w <strong>wierszach</strong> (poziomo) i <strong>kolumnach</strong> (pionowo).
+                    </p>
+                    <p class="text-sm bg-blue-50 p-3 rounded border-l-4 border-blue-500">
+                        <strong>Analogia:</strong> Tabela sprzedaży owoców (Jabłka, Banany, Pomarańcze w dniach tygodnia).
+                    </p>
+                </div>
+                <div class="flex flex-col items-center justify-center bg-gray-100 p-4 rounded">
+                    <p class="mb-2 text-sm font-mono text-gray-500">Zapis matematyczny macierzy A:</p>
+                    $$ A = \begin{pmatrix} 10 & 15 & 8 \\ 12 & 10 & 7 \\ 8 & 20 & 12 \end{pmatrix} $$
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h3 class="font-semibold text-lg mb-2">Wymiar i Elementy</h3>
+                <ul class="list-disc ml-5 space-y-2">
+                    <li><strong>Wymiar:</strong> format <em>wiersze x kolumny</em> (powyższa to 3x3).</li>
+                    <li><strong>Element \(a_{ij}\):</strong> \(i\) to wiersz, \(j\) to kolumna. Np. \(a_{23}\) (2. wiersz, 3. kolumna) to <strong>7</strong>.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="sec2" class="mb-12 bg-white p-8 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 border-b pb-2">2. Macierze Specjalne</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <div class="p-3 border rounded hover:shadow-md transition">
+                        <strong class="text-blue-700">Macierz Kwadratowa</strong>
+                        <p class="text-sm">Tyle samo wierszy co kolumn (np. 2x2, 3x3).</p>
+                    </div>
+                    <div class="p-3 border rounded hover:shadow-md transition">
+                        <strong class="text-blue-700">Macierz Zerowa</strong>
+                        <p class="text-sm">Wszystkie elementy to 0.</p>
+                    </div>
+                    <div class="p-3 border rounded hover:shadow-md transition">
+                        <strong class="text-blue-700">Macierz Jednostkowa (I)</strong>
+                        <p class="text-sm">Jedynki na przekątnej, zera wszędzie indziej. Działa jak liczba 1 w mnożeniu.</p>
+                        $$ I_{3x3} = \begin{pmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{pmatrix} $$
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 p-4 rounded border border-indigo-200">
+                    <h3 class="font-bold text-indigo-900 mb-3">Interaktywna Transpozycja (\(A^T\))</h3>
+                    <p class="text-xs mb-4">Kliknij przycisk, aby zamienić wiersze z kolumnami.</p>
+                    
+                    <div class="flex items-center justify-around">
+                        <div id="trans-matrix" class="matrix-bracket grid grid-cols-2 gap-2 text-center font-bold">
+                            <span>1</span><span>2</span>
+                            <span>3</span><span>4</span>
+                            <span>5</span><span>6</span>
+                        </div>
+                        <span class="text-2xl">→</span>
+                        <div id="trans-result" class="matrix-bracket grid grid-cols-3 gap-2 text-center text-gray-400">
+                            <span>?</span><span>?</span><span>?</span>
+                            <span>?</span><span>?</span><span>?</span>
+                        </div>
+                    </div>
+                    <button onclick="transposeDemo()" class="mt-4 w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition">Transponuj Macierz</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec3" class="mb-12 bg-white p-8 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 border-b pb-2">3. Podstawowe Operacje</h2>
+            
+            <div class="space-y-6">
+                <div>
+                    <h3 class="font-semibold text-lg">Dodawanie i Odejmowanie</h3>
+                    <p class="text-sm text-gray-600">Wymaga tych samych wymiarów. Dodajemy elementy na odpowiadających pozycjach.</p>
+                </div>
+
+                <div class="bg-yellow-50 p-6 rounded border border-yellow-200">
+                    <h3 class="font-bold text-yellow-900">Symulator: Mnożenie przez Skalar</h3>
+                    <p class="text-sm mb-4">Wpisz liczbę (skalar), aby zobaczyć jak zmienia się macierz.</p>
+                    
+                    <div class="flex items-center justify-center flex-wrap gap-4">
+                        <div class="flex flex-col items-center">
+                            <label class="text-xs font-bold">Skalar (k)</label>
+                            <input type="number" id="scalarInput" value="5" oninput="updateScalar()" class="w-16 p-2 text-center border-2 border-yellow-400 rounded text-xl font-bold">
+                        </div>
+                        <span class="text-2xl font-bold">×</span>
+                        <div class="matrix-bracket grid grid-cols-2 gap-4 font-mono text-lg">
+                            <span>2</span><span>8</span>
+                            <span>10</span><span>3</span>
+                        </div>
+                        <span class="text-2xl font-bold">=</span>
+                        <div class="matrix-bracket grid grid-cols-2 gap-4 font-mono text-lg text-blue-700 font-bold" id="scalarResult">
+                            <span>10</span><span>40</span>
+                            <span>50</span><span>15</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-lg">Mnożenie Macierzy (A × B)</h3>
+                    <p class="text-sm mb-2">Zasada "Wiersz razy Kolumna". <span class="text-red-600 font-bold">Uwaga: \(A \cdot B \neq B \cdot A\)</span>.</p>
+                    <p class="text-xs text-gray-500">Warunek: Liczba kolumn A musi równać się liczbie wierszy B.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec4" class="mb-12 bg-white p-8 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 border-b pb-2">4. Wyznacznik Macierzy (\(\det A\))</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <p class="mb-2">Specjalna liczba (tylko dla macierzy kwadratowych). Geometrycznie oznacza skalę zmiany pola/objętości.</p>
+                    <ul class="list-disc ml-5 text-sm space-y-1 mb-4">
+                        <li>\(\det = 0\): Macierz osobliwa (zgniata przestrzeń, brak odwrotnej).</li>
+                        <li>\(\det < 0\): Odwraca orientację.</li>
+                    </ul>
+                    <p class="font-bold">Dla macierzy 2x2:</p>
+                    $$ \det \begin{pmatrix} a & b \\ c & d \end{pmatrix} = ad - bc $$
+                </div>
+
+                <div class="bg-green-50 p-6 rounded border border-green-200 shadow-inner">
+                    <h3 class="font-bold text-green-900 mb-3 text-center">Kalkulator Wyznacznika 2x2</h3>
+                    
+                    <div class="flex items-center justify-center">
+                        <span class="text-xl mr-2">det</span>
+                        <div class="matrix-bracket grid grid-cols-2 gap-2">
+                            <input type="number" id="det-a" class="matrix-input" value="4" oninput="calcDet()">
+                            <input type="number" id="det-b" class="matrix-input" value="2" oninput="calcDet()">
+                            <input type="number" id="det-c" class="matrix-input" value="1" oninput="calcDet()">
+                            <input type="number" id="det-d" class="matrix-input" value="3" oninput="calcDet()">
+                        </div>
+                        <span class="text-xl mx-2">=</span>
+                        <div class="text-left">
+                            <div class="text-xs text-gray-500 font-mono">
+                                (<span id="disp-a">4</span> · <span id="disp-d">3</span>) - (<span id="disp-b">2</span> · <span id="disp-c">1</span>)
+                            </div>
+                            <div class="text-3xl font-bold text-green-700" id="det-result">10</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-gray-100 p-4 rounded text-sm">
+                <strong>Metody dla większych macierzy:</strong> Reguła Sarrusa (3x3), Rozwinięcie Laplace'a (uniwersalne), Metoda Gaussa.
+            </div>
+        </section>
+
+        <section id="sec5" class="mb-12 bg-white p-8 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 border-b pb-2">5. Macierz Odwrotna (\(A^{-1}\))</h2>
+            <p class="mb-4">Macierz, która "cofa" działanie macierzy A. $$ A \cdot A^{-1} = I $$</p>
+            <div class="bg-red-50 p-4 rounded border-l-4 border-red-500">
+                <strong>Warunek konieczny:</strong> Macierz odwrotna istnieje tylko wtedy, gdy \(\det(A) \neq 0\).
+            </div>
+        </section>
+
+        <section id="sec6" class="mb-12 bg-white p-8 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4 border-b pb-2">6. Układy Równań i Metody</h2>
+            <p class="mb-4">Układ równań \(Ax = b\) można rozwiązać na kilka sposobów.</p>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-blue-100 text-blue-900">
+                            <th class="p-3 border">Metoda</th>
+                            <th class="p-3 border">Najlepsza dla...</th>
+                            <th class="p-3 border">Wydajność</th>
+                            <th class="p-3 border">Działa gdy det=0?</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        <tr>
+                            <td class="p-3 border font-semibold">Wzory Cramera</td>
+                            <td class="p-3 border">Małych układów 2x2, 3x3 (ręcznie)</td>
+                            <td class="p-3 border text-red-600">Wolna</td>
+                            <td class="p-3 border text-red-600">Nie</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3 border font-semibold">Macierz Odwrotna</td>
+                            <td class="p-3 border">Teorii, gdy potrzebne jest \(A^{-1}\)</td>
+                            <td class="p-3 border text-yellow-600">Średnia/Wolna</td>
+                            <td class="p-3 border text-red-600">Nie</td>
+                        </tr>
+                        <tr class="bg-green-50">
+                            <td class="p-3 border font-semibold">Eliminacja Gaussa</td>
+                            <td class="p-3 border">Wszystkiego (standard w IT)</td>
+                            <td class="p-3 border text-green-600 font-bold">Najszybsza</td>
+                            <td class="p-3 border text-green-600 font-bold">Tak</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <footer class="text-center p-6 text-gray-500 text-sm">
+        Wygenerowano na podstawie notatki o macierzach.
+    </footer>
+
+    <script>
+        // 1. Symulator Transpozycji
+        function transposeDemo() {
+            // Macierz źródłowa to 2x3:
+            // 1 2
+            // 3 4
+            // 5 6
+            // Po transpozycji powinna być 3x2:
+            // 1 3 5
+            // 2 4 6
+            
+            const resultDiv = document.getElementById('trans-result');
+            resultDiv.innerHTML = `
+                <span>1</span><span>3</span><span>5</span>
+                <span>2</span><span>4</span><span>6</span>
+            `;
+            resultDiv.classList.remove('text-gray-400');
+            resultDiv.classList.add('text-indigo-700');
+        }
+
+        // 2. Symulator Skalara
+        function updateScalar() {
+            const k = document.getElementById('scalarInput').value;
+            const matrix = [2, 8, 10, 3]; // Bazowa macierz
+            const resultDiv = document.getElementById('scalarResult');
+            
+            // Oblicz nowe wartości
+            const newValues = matrix.map(val => val * k);
+            
+            // Aktualizuj HTML
+            resultDiv.innerHTML = `
+                <span>${newValues[0]}</span><span>${newValues[1]}</span>
+                <span>${newValues[2]}</span><span>${newValues[3]}</span>
+            `;
+        }
+
+        // 3. Kalkulator Wyznacznika
+        function calcDet() {
+            const a = document.getElementById('det-a').value || 0;
+            const b = document.getElementById('det-b').value || 0;
+            const c = document.getElementById('det-c').value || 0;
+            const d = document.getElementById('det-d').value || 0;
+
+            // Aktualizacja wizualizacji obliczeń
+            document.getElementById('disp-a').innerText = a;
+            document.getElementById('disp-b').innerText = b;
+            document.getElementById('disp-c').innerText = c;
+            document.getElementById('disp-d').innerText = d;
+
+            // Obliczenie
+            const result = (a * d) - (b * c);
+            document.getElementById('det-result').innerText = result;
+        }
+
+        // Uruchomienie kalkulacji przy starcie, żeby nie było pustych miejsc
+        updateScalar();
+        calcDet();
+    </script>
+</body>
+</html>
